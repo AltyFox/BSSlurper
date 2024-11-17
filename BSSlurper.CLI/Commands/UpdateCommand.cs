@@ -87,22 +87,7 @@ namespace BSSlurper.CLI.Commands
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                try
-                {
-                    if (File.Exists(fileName))
-                    {
-                        File.Delete(fileName);
-                    }
-
-                    using (var httpClient = new HttpClient())
-                    using (var response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
-                    using (var file = File.Create(fileName))
-                    {
-                        await response.Content.CopyToAsync(file, cancellationToken);
-                        Console.WriteLine($"Downloaded: {uri}");
-                        return; // Success, exit the loop
-                    }
-                }
+                try { if (File.Exists(fileName)) { File.Delete(fileName); } using (var httpClient = new HttpClient()) using (var response = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cancellationToken)) using (var file = File.Create(fileName)) { var totalBytes = response.Content.Headers.ContentLength ?? -1L; var totalReadBytes = 0L; var buffer = new byte[8192]; int readBytes; using (var contentStream = await response.Content.ReadAsStreamAsync()) { while ((readBytes = await contentStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0) { await file.WriteAsync(buffer, 0, readBytes, cancellationToken); totalReadBytes += readBytes; if (totalBytes != -1) { var progress = (double)totalReadBytes / totalBytes * 100; Console.Write($"\rProgress: {progress:F2}%"); } else { Console.Write($"\rDownloaded {totalReadBytes} bytes"); } } } Console.WriteLine($"\nDownloaded: {uri}"); return; // Success, exit the loop
                 catch (OperationCanceledException ex)
                 {
                     if (File.Exists(fileName))
